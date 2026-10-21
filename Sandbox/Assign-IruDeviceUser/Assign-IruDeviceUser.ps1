@@ -636,6 +636,18 @@ function Get-DetectedUPN {
         Write-Log "[UPN] IdentityStore lookup failed or not present."
     }
 
+    # Fallback for pure Entra/AAD-joined devices where LogonUI does not
+    # populate LastLoggedOnUPN and IdentityStore cache has no email.
+    try {
+        $candidate = (whoami /upn 2>$null).Trim().ToLower()
+        if ($candidate -and (Test-EmailFormat -Email $candidate)) {
+            Write-Log ("[UPN] Detected from whoami /upn " + $candidate)
+            return $candidate
+        }
+    } catch {
+        Write-Log "[UPN] whoami /upn failed."
+    }
+
     return $null
 }
 
